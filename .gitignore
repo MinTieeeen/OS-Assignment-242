@@ -55,25 +55,6 @@ ehthumbs.db
 *.sln
 *.sw?
 
-# Các file cụ thể theo từng ngôn ngữ
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Java
-*.class
-*.war
-*.ear
-*.jar
-hs_err_pid*
-
-# C/C++
 *.o
 *.obj
 *.a
@@ -84,15 +65,3 @@ hs_err_pid*
 *.exe
 *.out
 *.app
-
-# Ruby
-/.bundle/
-/vendor/bundle
-/lib/bundler/man/
-
-# JavaScript/Node.js
-/coverage/
-/.nyc_output
-/.serverless/
-/.fusebox/
-/jspm_packages/ 
