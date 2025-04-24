@@ -1,4 +1,4 @@
-#include "queue.h"
+ #include "queue.h"
 #include "sched.h"
 #include <pthread.h>
 
@@ -30,11 +30,13 @@ void init_scheduler(void) {
 
 	for (i = 0; i < MAX_PRIO; i ++) {
 		mlq_ready_queue[i].size = 0;
+		mlq_ready_queue[i].slot_used = 0; // new ready queue hasn't used any slot yet
 		slot[i] = MAX_PRIO - i; 
 	}
 #endif
 	ready_queue.size = 0;
 	run_queue.size = 0;
+
 	pthread_mutex_init(&queue_lock, NULL);
 }
 
@@ -45,16 +47,42 @@ void init_scheduler(void) {
  *  We implement stateful here using transition technique
  *  State representation   prio = 0 .. MAX_PRIO, curr_slot = 0..(MAX_PRIO - prio)
  */
+
 struct pcb_t * get_mlq_proc(void) {
 	struct pcb_t * proc = NULL;
 	/*TODO: get a process from PRIORITY [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
-	// The 'lock' = queue_lock with type: pthread_mutex_t
-	pthread_mutex_lock(&queue_lock);
-	proc = dequeue(&ready_queue);
-	pthread_mutex_unlock(&queue_lock);
-	return proc;	
+	
+	for (int i=0; i<MAX_PRIO; i++) {
+		if (mlq_ready_queue[i].slot_used < slot[i] && !empty(&mlq_ready_queue[i])) {
+		// if this ready queue isn't empty and it hasn't used all slots
+			pthread_mutex_lock(&queue_lock);
+			proc = dequeue(&mlq_ready_queue[i]);
+			mlq_ready_queue[i].slot_used++; // used up 1 slot
+			pthread_mutex_unlock(&queue_lock);
+			break;
+		}
+	}
+
+	if (!proc) {
+	// either no process is ready, or all queues used up their slots
+	// we'll reset slots and try again
+	for (int i=0; i<MAX_PRIO; i++)
+		mlq_ready_queue[i].slot_used = 0;
+	}
+	// try again
+	for (int i=0; i<MAX_PRIO; i++) {
+		if (mlq_ready_queue[i].slot_used < slot[i] && !empty(&mlq_ready_queue[i])) {
+		// if this ready queue isn't empty and it hasn't used all slots
+			pthread_mutex_lock(&queue_lock);
+			proc = dequeue(&mlq_ready_queue[i]);
+			mlq_ready_queue[i].slot_used++; // used up 1 slot
+			pthread_mutex_unlock(&queue_lock);
+			break;
+		}
+	}
+	return proc;
 }
 
 void put_mlq_proc(struct pcb_t * proc) {
