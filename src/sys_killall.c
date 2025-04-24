@@ -13,6 +13,9 @@
 #include "stdio.h"
 #include "libmem.h"
 
+#include "queue.h"
+#include <string.h>
+
 int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
 {
     char proc_name[100];
@@ -39,7 +42,7 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs* regs)
     //caller->running_list
     //caller->mlq_ready_queu
     int running_size = caller->running_list->size;
-    struct pcb_t *cur_proc, *swap_temp;
+    struct pcb_t *cur_proc;
     for (int j=0; j<running_size; j++) {
         cur_proc = caller->running_list->proc[j];
         if (strcmp(cur_proc->path, proc_name) == 0) {
