@@ -1,44 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "queue.h"
+#include <ctype.h>
 
 int empty(struct queue_t * q) {
         if (q == NULL) return 1;
-        return (q->size == 0);
+	return (q->size == 0);
 }
+
 
 void enqueue(struct queue_t * q, struct pcb_t * proc) {
         /* TODO: put a new process to queue [q] */
+        if (!proc || !q || q->size >= MAX_QUEUE_SIZE) return;
 
-        /* A queue_t represents a ready queue
-                * Processes in the same ready queue have the same priority.
-                * First process is put into first slot
-        */
-        if (q->size >= MAX_QUEUE_SIZE) {
-                perror("No queue slot available");
-                return;
-        }
-        else {
-                q->proc[q->size] = proc;
-                q->size++;
-        }
+        #ifdef MLQ_SCHED
+        proc->priority = proc->prio;
+        #endif
+        
+        q->proc[q->size] = proc;
+        q->size++;
 }
+
 struct pcb_t * dequeue(struct queue_t * q) {
-        /* TODO: return a pcb whose priority is the highest
+        /* TODO: return a pcb whose prioprity is the highest
          * in the queue [q] and remember to remove it from q
-         */
+         * */
+
         // Bound check
-        if (q->size == 0) {
-                perror("No process in this queue");
-                return NULL;
-        }
-        else {
-        // take out the first proc in this queue
-                struct pcb_t *result = q->proc[0];
-                q->size--;
-                for (int i=0; i<q->size; i++) {
-                        q->proc[i] = q->proc[i+1];
+        if (!q || empty(q)) return NULL;
+
+        // Take highest proc out
+        struct pcb_t * result;
+        uint32_t min_prio = q->proc[0]->priority;
+        int min_idx = 0;
+        for(int i = 1; i < q->size; i++){
+                if(q->proc[i]->priority < min_prio){
+                        min_prio = q->proc[i]->priority;
+                        min_idx = i;
+                        break;
                 }
-                return result;
         }
+        result  = q->proc[min_idx];
+
+        // Push all procs behind it forward
+        q->size--;      
+        for(int i = min_idx; i < q->size; i++){
+                q->proc[i] = q->proc[i+1];
+        }
+        
+        return result;
 }

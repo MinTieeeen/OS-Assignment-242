@@ -30,8 +30,7 @@ void init_scheduler(void) {
 
 	for (i = 0; i < MAX_PRIO; i ++) {
 		mlq_ready_queue[i].size = 0;
-		mlq_ready_queue[i].slot_used = 0; // new ready queue hasn't used any slot yet
-		slot[i] = MAX_PRIO - i; 
+		slot[i] = MAX_PRIO - i;
 	}
 #endif
 	ready_queue.size = 0;
@@ -55,11 +54,14 @@ struct pcb_t * get_mlq_proc(void) {
 	 * */
 	
 	for (int i=0; i<MAX_PRIO; i++) {
-		if (mlq_ready_queue[i].slot_used < slot[i] && !empty(&mlq_ready_queue[i])) {
+		if (slot[i] > 0 && !empty(&mlq_ready_queue[i])) {
 		// if this ready queue isn't empty and it hasn't used all slots
 			pthread_mutex_lock(&queue_lock);
 			proc = dequeue(&mlq_ready_queue[i]);
-			mlq_ready_queue[i].slot_used++; // used up 1 slot
+			if (proc != NULL) {
+				enqueue(&run_queue, proc); // put it into running queue!
+				slot[i]--; // used up 1 slot
+			}			
 			pthread_mutex_unlock(&queue_lock);
 			break;
 		}
@@ -67,21 +69,11 @@ struct pcb_t * get_mlq_proc(void) {
 
 	if (!proc) {
 	// either no process is ready, or all queues used up their slots
-	// we'll reset slots and try again
+	// we'll reset slots and try again later
 	for (int i=0; i<MAX_PRIO; i++)
-		mlq_ready_queue[i].slot_used = 0;
+		slot[i] = MAX_PRIO - i;
 	}
-	// try again
-	for (int i=0; i<MAX_PRIO; i++) {
-		if (mlq_ready_queue[i].slot_used < slot[i] && !empty(&mlq_ready_queue[i])) {
-		// if this ready queue isn't empty and it hasn't used all slots
-			pthread_mutex_lock(&queue_lock);
-			proc = dequeue(&mlq_ready_queue[i]);
-			mlq_ready_queue[i].slot_used++; // used up 1 slot
-			pthread_mutex_unlock(&queue_lock);
-			break;
-		}
-	}
+	
 	return proc;
 }
 
