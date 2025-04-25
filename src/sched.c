@@ -7,7 +7,7 @@
 static struct queue_t ready_queue;
 static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
-
+#undef MLQ_PAGING
 static struct queue_t running_list;
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
@@ -59,7 +59,6 @@ struct pcb_t * get_mlq_proc(void) {
 			pthread_mutex_lock(&queue_lock);
 			proc = dequeue(&mlq_ready_queue[i]);
 			if (proc != NULL) {
-				enqueue(&run_queue, proc); // put it into running queue!
 				slot[i]--; // used up 1 slot
 			}			
 			pthread_mutex_unlock(&queue_lock);
